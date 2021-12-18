@@ -1,0 +1,107 @@
+# day6
+
+## Setup
+
+```elixir
+sample = """
+3,4,3,1,2
+"""
+```
+
+```elixir
+smp =
+  String.split(sample, [",", "\n"], trim: true)
+  |> Enum.map(fn x -> Integer.parse(x) |> elem(0) end)
+  |> Enum.frequencies()
+```
+
+```elixir
+input = """
+1,1,1,2,1,5,1,1,2,1,4,1,4,1,1,1,1,1,1,4,1,1,1,1,4,1,1,5,1,3,1,2,1,1,1,2,1,1,1,4,1,1,3,1,5,1,1,1,1,3,5,5,2,1,1,1,2,1,1,1,1,1,1,1,1,5,4,1,1,1,1,1,3,1,1,2,4,4,1,1,1,1,1,1,3,1,1,1,1,5,1,3,1,5,1,2,1,1,5,1,1,1,5,3,3,1,4,1,3,1,3,1,1,1,1,3,1,4,1,1,1,1,1,2,1,1,1,4,2,1,1,5,1,1,1,2,1,1,1,1,1,1,1,1,2,1,1,1,1,1,5,1,1,1,1,3,1,1,1,1,1,3,4,1,2,1,3,2,1,1,2,1,1,1,1,4,1,1,1,1,4,1,1,1,1,1,2,1,1,4,1,1,1,5,3,2,2,1,1,3,1,5,1,5,1,1,1,1,1,5,1,4,1,2,1,1,1,1,2,1,3,1,1,1,1,1,1,2,1,1,1,3,1,4,3,1,4,1,3,2,1,1,1,1,1,3,1,1,1,1,1,1,1,1,1,1,2,1,5,1,1,1,1,2,1,1,1,3,5,1,1,1,1,5,1,1,2,1,2,4,2,2,1,1,1,5,2,1,1,5,1,1,1,1,5,1,1,1,2,1
+"""
+```
+
+```elixir
+inp =
+  String.split(input, [",", "\n"], trim: true)
+  |> Enum.map(fn x -> Integer.parse(x) |> elem(0) end)
+  |> Enum.frequencies()
+```
+
+## Part1
+
+```elixir
+defmodule Fishes do
+  def parent(timer, total) when total < timer do
+    1
+  end
+
+  def parent(timer, total) do
+    parent(7, total - timer) + child(9, total - timer)
+    # children = (total - timer) |> div(7)
+    # children + (
+    #   Enum.sum(for x <- 1..children, do: child(9, (total - timer - x * 7)))
+    #   )
+  end
+
+  def child(timer, total) when total < timer do
+    1
+  end
+
+  def child(timer, total) do
+    parent(7, total - timer) + child(9, total - timer)
+  end
+end
+```
+
+```elixir
+a = Enum.map(smp, fn {k, v} -> Fishes.parent(k + 1, 80) * v end) |> Enum.sum()
+# + Enum.reduce(smp, 0, fn {a, b}, acc -> a * b + acc end)
+a
+```
+
+```elixir
+a = Enum.map(inp, fn {k, v} -> Fishes.parent(k + 1, 80) * v end) |> Enum.sum()
+# + map_size(inp)
+a
+```
+
+## Part2
+
+```elixir
+# Recursion takes very long to execute
+# Enum.map(smp, fn {k, v} -> Fishes.parent(k + 1, 256) * v end) |> Enum.sum()
+```
+
+Refers Julian's solution: https://github.com/madlep/aoc_2021_elixir_livebook/blob/main/day06.livemd
+
+```elixir
+defmodule FastFishes do
+  def step(age_counts) do
+    {spawners, age_counts} = Map.pop(age_counts, 0, 0)
+
+    age_counts
+    |> Enum.map(fn
+      {age, count} -> {age - 1, count}
+    end)
+    |> Enum.into(%{})
+    |> Map.merge(%{6 => spawners, 8 => spawners}, fn _k, v1, v2 -> v1 + v2 end)
+  end
+end
+```
+
+```elixir
+smp
+|> Stream.iterate(&FastFishes.step/1)
+|> Enum.at(256)
+|> Map.values()
+|> Enum.sum()
+```
+
+```elixir
+inp
+|> Stream.iterate(&FastFishes.step/1)
+|> Enum.at(256)
+|> Map.values()
+|> Enum.sum()
+```
